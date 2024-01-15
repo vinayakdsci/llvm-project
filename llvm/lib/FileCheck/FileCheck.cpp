@@ -1814,6 +1814,7 @@ bool FileCheck::readCheckFile(
   }
 
   std::vector<Pattern> DagNotMatches = ImplicitNegativeChecks;
+  StringRef TrailingNotPrefix;
 
   // LineNumber keeps track of the line on which CheckPrefix instances are
   // found.
@@ -1927,6 +1928,7 @@ bool FileCheck::readCheckFile(
     // Handle CHECK-DAG/-NOT.
     if (CheckTy == Check::CheckDAG || CheckTy == Check::CheckNot) {
       DagNotMatches.push_back(P);
+      TrailingNotPrefix = UsedPrefix;
       continue;
     }
 
@@ -1957,11 +1959,11 @@ bool FileCheck::readCheckFile(
   }
 
   // Add an EOF pattern for any trailing --implicit-check-not/CHECK-DAG/-NOTs,
-  // and use the first prefix as a filler for the error message.
+  // and use the prefix from the last/trailing CHECK-NOT for the error message
   if (!DagNotMatches.empty()) {
     CheckStrings->emplace_back(
         Pattern(Check::CheckEOF, PatternContext.get(), LineNumber + 1),
-        *Req.CheckPrefixes.begin(), SMLoc::getFromPointer(Buffer.data()));
+        TrailingNotPrefix, SMLoc::getFromPointer(Buffer.data()));
     std::swap(DagNotMatches, CheckStrings->back().DagNotStrings);
   }
 
